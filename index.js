@@ -3924,7 +3924,7 @@ var PS = { };
       };
   };
   var strictInBound = function (p) {
-      return 0 <= p.x && (p.x < 20 && (0 <= p.y && p.y < 30));
+      return 0 <= p.row && (p.row < 30 && (0 <= p.col && p.col < 30));
   };
   var set = function (i) {
       return function (j) {
@@ -3947,8 +3947,8 @@ var PS = { };
       };
       _31.block = b;
       _31.pos = {
-          x: 9, 
-          y: 0
+          row: 0, 
+          col: 9
       };
       return _31;
   };
@@ -3960,8 +3960,8 @@ var PS = { };
           own: {
               block: new Tturn(1), 
               pos: {
-                  x: 9, 
-                  y: 0
+                  row: 0, 
+                  col: 9
               }
           }, 
           cells: rows
@@ -3988,89 +3988,83 @@ var PS = { };
           return _35;
       };
   };
-  var move = function (fx) {
-      return function (fy) {
+  var move = function (frow) {
+      return function (fcol) {
           return function (p) {
-              var _37 = {};
-              for (var _38 in p) {
-                  if (p.hasOwnProperty(_38)) {
-                      _37[_38] = p[_38];
-                  };
+              return {
+                  row: frow(p.row), 
+                  col: fcol(p.col)
               };
-              _37.x = fx(p.x);
-              _37.y = fy(p.y);
-              return _37;
           };
       };
   };
-  var right = move(function (_0) {
+  var right = move(Prelude.id(Prelude.categoryFn))(function (_0) {
       return _0 + 1 | 0;
-  })(Prelude.id(Prelude.categoryFn));
+  });
   var minus = Prelude.flip(Prelude.sub(Prelude.ringInt));
-  var up = move(Prelude.id(Prelude.categoryFn))(minus(1));
+  var up = move(minus(1))(Prelude.id(Prelude.categoryFn));
   var squares = [ [ Prelude.id(Prelude.categoryFn), up, Prelude[">>>"](Prelude.semigroupoidFn)(right)(up), right ] ];
   var sticks = [ [ Prelude.id(Prelude.categoryFn), up, Prelude[">>>"](Prelude.semigroupoidFn)(up)(up), Prelude[">>>"](Prelude.semigroupoidFn)(up)(Prelude[">>>"](Prelude.semigroupoidFn)(up)(up)) ], [ Prelude.id(Prelude.categoryFn), right, Prelude[">>>"](Prelude.semigroupoidFn)(right)(right), Prelude[">>>"](Prelude.semigroupoidFn)(right)(Prelude[">>>"](Prelude.semigroupoidFn)(right)(right)) ] ];
-  var left = move(minus(1))(Prelude.id(Prelude.categoryFn));
+  var left = move(Prelude.id(Prelude.categoryFn))(minus(1));
   var inBound = function (p) {
-      return 0 <= p.x && (p.x < 20 && p.y < 30);
+      return p.row < 30 && (0 <= p.col && p.col < 20);
   };
   var height = 600.0;
   var get = function (i) {
       return function (j) {
           return function (l) {
-              var _39 = Data_List.index(l)(i);
-              if (_39 instanceof Data_Maybe.Just) {
-                  return Data_List.index(_39.value0)(j);
+              var _37 = Data_List.index(l)(i);
+              if (_37 instanceof Data_Maybe.Just) {
+                  return Data_List.index(_37.value0)(j);
               };
-              if (_39 instanceof Data_Maybe.Nothing) {
+              if (_37 instanceof Data_Maybe.Nothing) {
                   return Data_Maybe.Nothing.value;
               };
-              throw new Error("Failed pattern match at Main line 53, column 1 - line 54, column 1: " + [ _39.constructor.name ]);
+              throw new Error("Failed pattern match at Main line 53, column 1 - line 54, column 1: " + [ _37.constructor.name ]);
           };
       };
   };
-  var isAvailPos = function (plane) {
+  var isAvailPos = function (matrix) {
       return function (point) {
-          var _41 = get(point.y)(point.x)(plane);
-          if (_41 instanceof Data_Maybe.Just && _41.value0 instanceof Cell) {
+          var _39 = get(point.row)(point.col)(matrix);
+          if (_39 instanceof Data_Maybe.Just && _39.value0 instanceof Cell) {
               return false;
           };
-          var _44 = inBound(point);
-          if (_44) {
+          if (_39 instanceof Data_Maybe.Just && _39.value0 instanceof EmptyCell) {
               return true;
           };
-          if (!_44) {
-              return false;
+          if (_39 instanceof Data_Maybe.Nothing) {
+              return inBound(point);
           };
-          throw new Error("Failed pattern match at Main line 229, column 1 - line 230, column 1: " + [ _44.constructor.name ]);
+          throw new Error("Failed pattern match at Main line 229, column 1 - line 230, column 1: " + [ _39.constructor.name ]);
       };
   };
-  var fullRows = function (plane) {
+  var finish = function (game) {
+      var _43 = {};
+      for (var _44 in game) {
+          if (game.hasOwnProperty(_44)) {
+              _43[_44] = game[_44];
+          };
+      };
+      _43.playing = false;
+      return _43;
+  };
+  var filledRows = function (matrix) {
       var isEmpty = function (_26) {
           if (_26 instanceof EmptyCell) {
               return true;
           };
           return false;
       };
-      var isRowFull = function (row) {
-          return Data_Foldable.all(Data_List.foldableList)(Prelude.booleanAlgebraBoolean)(function (_134) {
-              return !isEmpty(_134);
+      var isRowFilled = function (row) {
+          return Data_Foldable.all(Data_List.foldableList)(Prelude.booleanAlgebraBoolean)(function (_132) {
+              return !isEmpty(_132);
           })(row);
       };
-      var p1 = Prelude.map(Data_List.functorList)(isRowFull)(plane);
+      var p1 = Prelude.map(Data_List.functorList)(isRowFilled)(matrix);
       var p2 = Data_List.filter(Data_Tuple.snd)(Data_List.zip(Data_List[".."](0)(29))(p1));
       var p3 = Prelude.map(Data_List.functorList)(Data_Tuple.fst)(p2);
       return p3;
-  };
-  var finish = function (game) {
-      var _46 = {};
-      for (var _47 in game) {
-          if (game.hasOwnProperty(_47)) {
-              _46[_47] = game[_47];
-          };
-      };
-      _46.playing = false;
-      return _46;
   };
   var drawGrid = (function () {
       var drawVertical = function (x) {
@@ -4142,9 +4136,9 @@ var PS = { };
           return Graphics_Canvas_Free.fill;
       });
   });
-  var down = move(Prelude.id(Prelude.categoryFn))(function (_1) {
+  var down = move(function (_1) {
       return _1 + 1 | 0;
-  });
+  })(Prelude.id(Prelude.categoryFn));
   var lguns = [ [ Prelude.id(Prelude.categoryFn), right, Prelude[">>>"](Prelude.semigroupoidFn)(right)(down), left ], [ Prelude.id(Prelude.categoryFn), up, Prelude[">>>"](Prelude.semigroupoidFn)(up)(right), down ], [ Prelude.id(Prelude.categoryFn), right, left, Prelude[">>>"](Prelude.semigroupoidFn)(left)(up) ], [ Prelude.id(Prelude.categoryFn), up, down, Prelude[">>>"](Prelude.semigroupoidFn)(left)(down) ] ];
   var lsnakes = [ [ Prelude.id(Prelude.categoryFn), Prelude[">>>"](Prelude.semigroupoidFn)(right)(down), down, left ], [ Prelude.id(Prelude.categoryFn), up, Prelude[">>>"](Prelude.semigroupoidFn)(left)(down), left ] ];
   var rguns = [ [ Prelude.id(Prelude.categoryFn), right, Prelude[">>>"](Prelude.semigroupoidFn)(left)(down), left ], [ Prelude.id(Prelude.categoryFn), up, Prelude[">>>"](Prelude.semigroupoidFn)(right)(down), down ], [ Prelude.id(Prelude.categoryFn), Prelude[">>>"](Prelude.semigroupoidFn)(right)(up), right, left ], [ Prelude.id(Prelude.categoryFn), up, down, Prelude[">>>"](Prelude.semigroupoidFn)(right)(up) ] ];
@@ -4176,23 +4170,23 @@ var PS = { };
   };
   var rotateBlock = function (game) {
       var next = nextShape(game.own.block);
-      var _66 = {};
-      for (var _67 in game) {
-          if (game.hasOwnProperty(_67)) {
-              _66[_67] = game[_67];
+      var _64 = {};
+      for (var _65 in game) {
+          if (game.hasOwnProperty(_65)) {
+              _64[_65] = game[_65];
           };
       };
-      _66.own = (function () {
-          var _64 = {};
-          for (var _65 in game.own) {
-              if (game.own.hasOwnProperty(_65)) {
-                  _64[_65] = game.own[_65];
+      _64.own = (function () {
+          var _62 = {};
+          for (var _63 in game.own) {
+              if (game.own.hasOwnProperty(_63)) {
+                  _62[_63] = game.own[_63];
               };
           };
-          _64.block = next;
-          return _64;
+          _62.block = next;
+          return _62;
       })();
-      return _66;
+      return _64;
   };
   var points = function (_22) {
       if (_22.block instanceof Stick) {
@@ -4258,7 +4252,7 @@ var PS = { };
   };
   var drawOwnBlock = function (own) {
       return Data_Foldable.for_(Control_Monad_Free.applicativeFree(Data_Coyoneda.functorCoyoneda))(Data_Foldable.foldableArray)(points(own))(function (p) {
-          return drawCell(Data_Int.toNumber(p.y))(Data_Int.toNumber(p.x))(colorOf(own.block));
+          return drawCell(Data_Int.toNumber(p.row))(Data_Int.toNumber(p.col))(colorOf(own.block));
       });
   };
   var render = function (game) {
@@ -4278,69 +4272,69 @@ var PS = { };
       };
   };
   var breakLines = function (game) {
-      var pull = function (plane) {
+      var clear = function (matrix) {
           return function (ridx) {
               var go = function (__copy_ridx_1) {
-                  return function (__copy_plane_1) {
+                  return function (__copy_matrix_1) {
                       var ridx_1 = __copy_ridx_1;
-                      var plane_1 = __copy_plane_1;
+                      var matrix_1 = __copy_matrix_1;
                       tco: while (true) {
-                          var _98 = ridx_1 > 0;
-                          if (_98) {
-                              var plane$prime = swapRow(ridx_1)(ridx_1 - 1)(plane_1);
+                          var _96 = ridx_1 > 0;
+                          if (_96) {
+                              var matrix$prime = swapRow(ridx_1)(ridx_1 - 1)(matrix_1);
                               var __tco_ridx_1 = ridx_1 - 1;
                               ridx_1 = __tco_ridx_1;
-                              plane_1 = plane$prime;
+                              matrix_1 = matrix$prime;
                               continue tco;
                           };
-                          if (!_98) {
-                              return plane_1;
+                          if (!_96) {
+                              return matrix_1;
                           };
-                          throw new Error("Failed pattern match at Main line 278, column 5 - line 279, column 5: " + [ _98.constructor.name ]);
+                          throw new Error("Failed pattern match at Main line 279, column 5 - line 280, column 5: " + [ _96.constructor.name ]);
                       };
                   };
               };
-              return go(ridx)(plane);
+              return go(ridx)(matrix);
           };
       };
-      var $$break = function (plane) {
+      var $$break = function (matrix) {
           return function (ridx) {
               var emptyRow = Data_List.toList(Data_Foldable.foldableArray)(Prelude.map(Prelude.functorArray)(function (_20) {
                   return EmptyCell.value;
               })([ Data_List[".."](0)(19) ]));
-              var plane$prime = Data_Maybe_Unsafe.fromJust(Data_List.updateAt(ridx)(emptyRow)(plane));
-              return plane$prime;
+              var matrix$prime = Data_Maybe_Unsafe.fromJust(Data_List.updateAt(ridx)(emptyRow)(matrix));
+              return matrix$prime;
           };
       };
-      var ridx = fullRows(game.cells);
-      var cells1 = Data_Foldable.foldlDefault(Data_List.foldableList)($$break)(game.cells)(ridx);
-      var cells2 = Data_Foldable.foldlDefault(Data_List.foldableList)(pull)(cells1)(ridx);
+      var ridxs = filledRows(game.cells);
+      var cells1 = Data_Foldable.foldlDefault(Data_List.foldableList)($$break)(game.cells)(ridxs);
+      var cells2 = Data_Foldable.foldlDefault(Data_List.foldableList)(clear)(cells1)(ridxs);
+      var _98 = {};
+      for (var _99 in game) {
+          if (game.hasOwnProperty(_99)) {
+              _98[_99] = game[_99];
+          };
+      };
+      _98.cells = cells2;
+      return _98;
+  };
+  var abandonOwn = function (game) {
+      var color = colorOf(game.own.block);
+      var coloring = function (cells) {
+          return function (point) {
+              return set(point.row)(point.col)(new Cell(color))(cells);
+          };
+      };
+      var p = Data_List.filter(strictInBound)(Data_List.toList(Data_Foldable.foldableArray)(points(game.own)));
+      var c = Data_Foldable.foldlDefault(Data_List.foldableList)(coloring)(game.cells)(p);
       var _100 = {};
       for (var _101 in game) {
           if (game.hasOwnProperty(_101)) {
               _100[_101] = game[_101];
           };
       };
-      _100.cells = cells2;
+      _100.cells = c;
       return _100;
-  };
-  var abandonOwn = function (game) {
-      var color = colorOf(game.own.block);
-      var coloring = function (cells) {
-          return function (point) {
-              return set(point.y)(point.x)(new Cell(color))(cells);
-          };
-      };
-      var p = Data_List.filter(strictInBound)(Data_List.toList(Data_Foldable.foldableArray)(points(game.own)));
-      var c = Data_Foldable.foldlDefault(Data_List.foldableList)(coloring)(game.cells)(p);
-      var _102 = {};
-      for (var _103 in game) {
-          if (game.hasOwnProperty(_103)) {
-              _102[_103] = game[_103];
-          };
-      };
-      _102.cells = c;
-      return _102;
   };
   var step = function (_25) {
       return function (game) {
@@ -4349,9 +4343,25 @@ var PS = { };
           };
           if (_25 instanceof LeftPress) {
               if (game.playing) {
-                  var _107 = canMove(left)(game);
-                  if (_107) {
+                  var _105 = canMove(left)(game);
+                  if (_105) {
                       return moveBlock(left)(game);
+                  };
+                  if (!_105) {
+                      return game;
+                  };
+                  throw new Error("Failed pattern match: " + [ _105.constructor.name ]);
+              };
+              if (!game.playing) {
+                  return game;
+              };
+              throw new Error("Failed pattern match: " + [ game.playing.constructor.name ]);
+          };
+          if (_25 instanceof RightPress) {
+              if (game.playing) {
+                  var _107 = canMove(right)(game);
+                  if (_107) {
+                      return moveBlock(right)(game);
                   };
                   if (!_107) {
                       return game;
@@ -4363,52 +4373,36 @@ var PS = { };
               };
               throw new Error("Failed pattern match: " + [ game.playing.constructor.name ]);
           };
-          if (_25 instanceof RightPress) {
-              if (game.playing) {
-                  var _109 = canMove(right)(game);
-                  if (_109) {
-                      return moveBlock(right)(game);
-                  };
-                  if (!_109) {
-                      return game;
-                  };
-                  throw new Error("Failed pattern match: " + [ _109.constructor.name ]);
-              };
-              if (!game.playing) {
-                  return game;
-              };
-              throw new Error("Failed pattern match: " + [ game.playing.constructor.name ]);
-          };
           if (_25 instanceof UpPress) {
               if (game.playing) {
                   var next = nextShape(game.own.block);
                   var game$prime = (function () {
-                      var _113 = {};
-                      for (var _114 in game) {
-                          if (game.hasOwnProperty(_114)) {
-                              _113[_114] = game[_114];
+                      var _111 = {};
+                      for (var _112 in game) {
+                          if (game.hasOwnProperty(_112)) {
+                              _111[_112] = game[_112];
                           };
                       };
-                      _113.own = (function () {
-                          var _111 = {};
-                          for (var _112 in game.own) {
-                              if (game.own.hasOwnProperty(_112)) {
-                                  _111[_112] = game.own[_112];
+                      _111.own = (function () {
+                          var _109 = {};
+                          for (var _110 in game.own) {
+                              if (game.own.hasOwnProperty(_110)) {
+                                  _109[_110] = game.own[_110];
                               };
                           };
-                          _111.block = next;
-                          return _111;
+                          _109.block = next;
+                          return _109;
                       })();
-                      return _113;
+                      return _111;
                   })();
-                  var _115 = canMove(Prelude.id(Prelude.categoryFn))(game$prime);
-                  if (_115) {
+                  var _113 = canMove(Prelude.id(Prelude.categoryFn))(game$prime);
+                  if (_113) {
                       return rotateBlock(game);
                   };
-                  if (!_115) {
+                  if (!_113) {
                       return game;
                   };
-                  throw new Error("Failed pattern match: " + [ _115.constructor.name ]);
+                  throw new Error("Failed pattern match: " + [ _113.constructor.name ]);
               };
               if (!game.playing) {
                   return game;
@@ -4417,33 +4411,33 @@ var PS = { };
           };
           if (_25 instanceof DownPress) {
               if (game.playing) {
-                  var _117 = canMove(down)(game);
-                  if (_117) {
+                  var _115 = canMove(down)(game);
+                  if (_115) {
                       return moveBlock(down)(game);
                   };
-                  if (!_117) {
+                  if (!_115) {
                       var g1 = abandonOwn(game);
                       var g2 = breakLines(g1);
                       var g3 = (function () {
-                          var _118 = {};
-                          for (var _119 in g2) {
-                              if (g2.hasOwnProperty(_119)) {
-                                  _118[_119] = g2[_119];
+                          var _116 = {};
+                          for (var _117 in g2) {
+                              if (g2.hasOwnProperty(_117)) {
+                                  _116[_117] = g2[_117];
                               };
                           };
-                          _118.own = nextOwn(game.own);
-                          return _118;
+                          _116.own = nextOwn(game.own);
+                          return _116;
                       })();
-                      var _120 = canMove(Prelude.id(Prelude.categoryFn))(g3);
-                      if (_120) {
+                      var _118 = canMove(Prelude.id(Prelude.categoryFn))(g3);
+                      if (_118) {
                           return g3;
                       };
-                      if (!_120) {
+                      if (!_118) {
                           return finish(g3);
                       };
-                      throw new Error("Failed pattern match: " + [ _120.constructor.name ]);
+                      throw new Error("Failed pattern match: " + [ _118.constructor.name ]);
                   };
-                  throw new Error("Failed pattern match: " + [ _117.constructor.name ]);
+                  throw new Error("Failed pattern match: " + [ _115.constructor.name ]);
               };
               if (!game.playing) {
                   return game;
@@ -4454,16 +4448,16 @@ var PS = { };
               var go = function (__copy_game_2) {
                   var game_2 = __copy_game_2;
                   tco: while (true) {
-                      var _121 = canMove(down)(game_2);
-                      if (_121) {
+                      var _119 = canMove(down)(game_2);
+                      if (_119) {
                           var game$prime = moveBlock(down)(game_2);
                           game_2 = game$prime;
                           continue tco;
                       };
-                      if (!_121) {
+                      if (!_119) {
                           return step(DownPress.value)(game_2);
                       };
-                      throw new Error("Failed pattern match: " + [ _121.constructor.name ]);
+                      throw new Error("Failed pattern match: " + [ _119.constructor.name ]);
                   };
               };
               if (game.playing) {
@@ -4496,7 +4490,7 @@ var PS = { };
               if (!t) {
                   return None.value;
               };
-              throw new Error("Failed pattern match at Main line 359, column 7 - line 368, column 3: " + [ t.constructor.name ]);
+              throw new Error("Failed pattern match at Main line 360, column 7 - line 369, column 3: " + [ t.constructor.name ]);
           }), Signal["~>"](Signal.functorSignal)(_16)(function (t) {
               if (t) {
                   return UpPress.value;
@@ -4504,7 +4498,7 @@ var PS = { };
               if (!t) {
                   return None.value;
               };
-              throw new Error("Failed pattern match at Main line 359, column 7 - line 368, column 3: " + [ t.constructor.name ]);
+              throw new Error("Failed pattern match at Main line 360, column 7 - line 369, column 3: " + [ t.constructor.name ]);
           }), Signal["~>"](Signal.functorSignal)(_15)(function (t) {
               if (t) {
                   return RightPress.value;
@@ -4512,7 +4506,7 @@ var PS = { };
               if (!t) {
                   return None.value;
               };
-              throw new Error("Failed pattern match at Main line 359, column 7 - line 368, column 3: " + [ t.constructor.name ]);
+              throw new Error("Failed pattern match at Main line 360, column 7 - line 369, column 3: " + [ t.constructor.name ]);
           }), Signal["~>"](Signal.functorSignal)(_14)(function (t) {
               if (t) {
                   return DownPress.value;
@@ -4520,7 +4514,7 @@ var PS = { };
               if (!t) {
                   return None.value;
               };
-              throw new Error("Failed pattern match at Main line 359, column 7 - line 368, column 3: " + [ t.constructor.name ]);
+              throw new Error("Failed pattern match at Main line 360, column 7 - line 369, column 3: " + [ t.constructor.name ]);
           }), Signal["~>"](Signal.functorSignal)(_13)(function (t) {
               if (t) {
                   return SpacePress.value;
@@ -4528,7 +4522,7 @@ var PS = { };
               if (!t) {
                   return None.value;
               };
-              throw new Error("Failed pattern match at Main line 359, column 7 - line 368, column 3: " + [ t.constructor.name ]);
+              throw new Error("Failed pattern match at Main line 360, column 7 - line 369, column 3: " + [ t.constructor.name ]);
           }) ]));
           var gameLogic = Signal.foldp(step)(newGameState)(actions);
           return Signal.runSignal(Signal["~>"](Signal.functorSignal)(gameLogic)(render));
@@ -4556,7 +4550,7 @@ var PS = { };
   exports["step"] = step;
   exports["finish"] = finish;
   exports["breakLines"] = breakLines;
-  exports["fullRows"] = fullRows;
+  exports["filledRows"] = filledRows;
   exports["nextOwn"] = nextOwn;
   exports["abandonOwn"] = abandonOwn;
   exports["canMove"] = canMove;
